@@ -70,7 +70,7 @@ def _extract_via_tool_calling(raw_text: str) -> PatientReferral:
     }
 
     response = client.chat.completions.create(
-        model="llama3-8b-8192",
+        model="llama-3.1-8b-instant",
         messages=[
             {
                 "role": "system",
@@ -115,7 +115,7 @@ Required fields:
 """
 
     response = client.chat.completions.create(
-        model="llama3-8b-8192",
+        model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": raw_text}

@@ -25,7 +25,7 @@ app = FastAPI(
     version="1.0.0",
     contact={
         "name": "Anish Ravikiran",
-        "url": "https://github.com/yourusername/ub-healthcare-engine"
+        "url": "https://github.com/Anish06-crypto/ub-healthcare-engine"
     }
  )
 
