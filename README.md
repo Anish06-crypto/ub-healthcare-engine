@@ -85,9 +85,14 @@ git clone https://github.com/Anish06-crypto/ub-healthcare-engine
 cd ub-healthcare-engine
 python3.11 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-backend.txt   # FastAPI + pydantic + groq + SQLAlchemy
 cp .env.example .env  # Add your GROQ_API_KEY
 ```
+
+> **Note on `requirements.txt`:** This file contains only the Streamlit dashboard
+> dependencies (`streamlit`, `pandas`, `requests`) so that Streamlit Community Cloud
+> can deploy without triggering a pydantic-core Rust compilation.
+> The full backend stack lives in `requirements-backend.txt`.
 
 ---
 
