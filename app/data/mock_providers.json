@@ -1,0 +1,103 @@
+[
+    {
+        "provider_id": "PRV-001",
+        "name": "Oakwood Nursing Home",
+        "care_types_offered": [
+            "Nursing",
+            "Residential"
+        ],
+        "supported_complexities": [
+            "Medium",
+            "High"
+        ],
+        "specialisms": [
+            "Dementia",
+            "Parkinson's",
+            "End of Life Care"
+        ],
+        "location": "Birmingham, West Midlands",
+        "weekly_cost": 1350.00,
+        "cqc_rating": "Good",
+        "available_beds": 3
+    },
+    {
+        "provider_id": "PRV-002",
+        "name": "Meadowbrook Supported Living",
+        "care_types_offered": [
+            "Supported Living"
+        ],
+        "supported_complexities": [
+            "Low",
+            "Medium"
+        ],
+        "specialisms": [
+            "Learning Disabilities",
+            "Autism",
+            "Mental Health"
+        ],
+        "location": "Coventry, West Midlands",
+        "weekly_cost": 980.00,
+        "cqc_rating": "Outstanding",
+        "available_beds": 1
+    },
+    {
+        "provider_id": "PRV-003",
+        "name": "Riverside Mental Health Unit",
+        "care_types_offered": [
+            "Mental Health",
+            "Supported Living"
+        ],
+        "supported_complexities": [
+            "High"
+        ],
+        "specialisms": [
+            "Schizophrenia",
+            "Bipolar Disorder",
+            "Acquired Brain Injury"
+        ],
+        "location": "Birmingham, West Midlands",
+        "weekly_cost": 1800.00,
+        "cqc_rating": "Good",
+        "available_beds": 2
+    },
+    {
+        "provider_id": "PRV-004",
+        "name": "Hillcrest Residential Care",
+        "care_types_offered": [
+            "Residential"
+        ],
+        "supported_complexities": [
+            "Low",
+            "Medium"
+        ],
+        "specialisms": [
+            "Elderly Care",
+            "Dementia",
+            "Stroke Recovery"
+        ],
+        "location": "Solihull, West Midlands",
+        "weekly_cost": 1100.00,
+        "cqc_rating": "Good",
+        "available_beds": 0
+    },
+    {
+        "provider_id": "PRV-005",
+        "name": "Northgate Complex Care",
+        "care_types_offered": [
+            "Nursing",
+            "Mental Health"
+        ],
+        "supported_complexities": [
+            "High"
+        ],
+        "specialisms": [
+            "Acquired Brain Injury",
+            "Spinal Injury",
+            "Ventilator Dependency"
+        ],
+        "location": "Wolverhampton, West Midlands",
+        "weekly_cost": 2200.00,
+        "cqc_rating": "Outstanding",
+        "available_beds": 1
+    }
+]
