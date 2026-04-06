@@ -35,5 +35,7 @@ jobs:
         # exit-zero treats all errors as warnings.
         flake8 app tests --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
+      env:
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       run: |
         pytest
