@@ -11,33 +11,15 @@ for the UB Healthcare KTP Associate role at Birmingham City University.
 
 ## Architecture
 
-Raw Referral Text
-      │
-      ▼
-┌─────────────────┐
-│  LLM Extractor  │  ← Groq LLaMA 3.1 8b instant (tool calling + JSON fallback)
-│  extractor.py   │
-└────────┬────────┘
-         │ PatientReferral (structured)
-         ▼
-┌─────────────────┐
-│ Scoring Engine  │  ← Deterministic logic (no LLM)
-│  matcher.py     │
-└────────┬────────┘
-         │ Hard filters → excluded
-         │ Soft scores → ranked
-         ▼
-┌─────────────────┐
-│ Reasoning Trace │  ← LLM generates audit sentence from pre-built reasons
-│  (LLM only)     │
-└────────┬────────┘
-         │ List[MatchResult]
-         ▼
-         FastAPI Response
-         (with Swagger docs)
-         Plain Text
-**Key design principle:** The LLM extracts and narrates — it never scores
-or filters. All clinical decisions use deterministic logic.
+```mermaid
+flowchart TD
+    A([Raw Referral Text]) --> B[LLM Extractor<br/><code>extractor.py</code><br/><i>Groq LLaMA 3.1 8b instant</i>]
+    B -->|PatientReferral structured JSON| C{Scoring Engine<br/><code>matcher.py</code><br/><i>Deterministic logic - no LLM</i>}
+    C -->|Hard filters → excluded<br/>Soft scores → ranked| D[Reasoning Trace<br/><i>LLM generated audit sentence</i>]
+    D -->|List of MatchResult| E([FastAPI Response<br/>with Swagger docs])
+```
+
+**Key design principle:** The LLM extracts and narrates — it never scores or filters. All clinical decisions use deterministic logic.
 
 ---
 
