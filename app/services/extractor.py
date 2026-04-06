@@ -3,6 +3,7 @@ import json
 from groq import Groq
 from dotenv import load_dotenv
 from app.models import PatientReferral
+import json as json_lib
 
 load_dotenv()
 
@@ -62,7 +63,6 @@ def _extract_via_tool_calling(raw_text: str) -> PatientReferral:
                     "patient_id",
                     "care_type_required",
                     "clinical_complexity",
-                    "primary_conditions",
                     "location_preference"
                 ]
             }
@@ -124,7 +124,18 @@ Required fields:
     )
 
     raw_json = response.choices[0].message.content
-    return PatientReferral.model_validate_json(raw_json)
+    data = json_lib.loads(raw_json)
+
+    # Apply defaults defensively — LLMs sometimes return null for optional fields
+    if not data.get("primary_conditions"):
+        data["primary_conditions"] = []
+    if not data.get("max_weekly_budget"):
+        data["max_weekly_budget"] = 1500.0
+    if not data.get("urgency"):
+        data["urgency"] = "Routine"
+
+    return PatientReferral.model_validate(data)
+
 
 
 # ─────────────────────────────────────────────
