@@ -12,30 +12,30 @@ for the UB Healthcare KTP Associate role at Birmingham City University.
 ## Architecture
 
 Raw Referral Text
-│
-▼
+      │
+      ▼
 ┌─────────────────┐
 │  LLM Extractor  │  ← Groq LLaMA 3.1 8b instant (tool calling + JSON fallback)
 │  extractor.py   │
 └────────┬────────┘
-│ PatientReferral (structured)
-▼
+         │ PatientReferral (structured)
+         ▼
 ┌─────────────────┐
 │ Scoring Engine  │  ← Deterministic logic (no LLM)
 │  matcher.py     │
 └────────┬────────┘
-│ Hard filters → excluded
-│ Soft scores → ranked
-▼
+         │ Hard filters → excluded
+         │ Soft scores → ranked
+         ▼
 ┌─────────────────┐
 │ Reasoning Trace │  ← LLM generates audit sentence from pre-built reasons
 │  (LLM only)     │
 └────────┬────────┘
-│ List[MatchResult]
-▼
-FastAPI Response
-(with Swagger docs)
-Plain Text
+         │ List[MatchResult]
+         ▼
+         FastAPI Response
+         (with Swagger docs)
+         Plain Text
 **Key design principle:** The LLM extracts and narrates — it never scores
 or filters. All clinical decisions use deterministic logic.
 
@@ -84,17 +84,17 @@ Bash
 pytest tests/ -v
 16 tests — 10 deterministic unit tests (no API calls ), 6 integration tests
 against the live Groq API.
-
+```
 ---
 
-**Clinical Governance**
+## Clinical Governance
 
 See GOVERNANCE.md for data minimisation, auditability,
 and NHS compliance design decisions.
 
 ---
 
-**Limitations** 
+## Limitations 
 
 This is a prototype built with mock data. See GOVERNANCE.md for a full
 list of what would be required before clinical use.
