@@ -325,6 +325,18 @@ def call_extract_only(text: str) -> tuple[dict | None, str | None]:
         return None, str(e)
 
 
+def call_audit_log() -> tuple[list | None, str | None]:
+    try:
+        r = requests.get(f"{API_BASE}/api/v1/audit-log", timeout=10)
+        if r.status_code == 200:
+            return r.json(), None
+        return None, r.json().get("detail", r.text)
+    except requests.exceptions.ConnectionError:
+        return None, "Cannot connect to API. Is `uvicorn app.main:app --reload` running?"
+    except Exception as e:
+        return None, str(e)
+
+
 # ─────────────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────────────
@@ -354,7 +366,7 @@ with st.sidebar:
     # Navigation
     page = st.radio(
         "Navigate",
-        ["🚀 Full Pipeline", "🔬 Extract Only", "📋 Provider Browser", "ℹ️ Architecture"],
+        ["🚀 Full Pipeline", "🔬 Extract Only", "📋 Provider Browser", "📊 Audit Log", "ℹ️ Architecture"],
         label_visibility="collapsed",
     )
 
@@ -721,6 +733,139 @@ elif "📋 Provider Browser" in page:
 
     except FileNotFoundError:
         st.error("Provider database not found. Ensure you are running from the project root.")
+
+
+# ─────────────────────────────────────────────
+# PAGE: AUDIT LOG
+# ─────────────────────────────────────────────
+
+elif "📊 Audit Log" in page:
+
+    st.markdown("""
+    <div class="section-header">
+      <h2>Placement Audit Log</h2>
+    </div>
+    <div class="callout">
+      Live feed from <code>GET /api/v1/audit-log</code> — the last 50 placement decisions
+      persisted to <code>audit.db</code> (SQLite). Every call to
+      <code>/match-providers</code> or <code>/full-pipeline</code> writes a row here.
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_refresh, _ = st.columns([1, 5])
+    with col_refresh:
+        refresh = st.button("🔄 Refresh", use_container_width=True)
+
+    with st.spinner("Fetching audit log…"):
+        entries, error = call_audit_log()
+
+    if error:
+        st.error(f"**API Error:** {error}")
+    elif not entries:
+        st.info("No audit log entries yet. Run a placement via the Full Pipeline page to create your first record.")
+    else:
+        # ── Summary stats ────────────────────────────────────────────────────
+        total_entries = len(entries)
+        avg_score = sum(e["top_match_score"] for e in entries if e["top_match_score"] is not None) / max(
+            sum(1 for e in entries if e["top_match_score"] is not None), 1
+        )
+        no_match_count = sum(1 for e in entries if e["total_matches_returned"] == 0)
+        complexity_counts = {}
+        for e in entries:
+            k = e.get("clinical_complexity", "Unknown")
+            complexity_counts[k] = complexity_counts.get(k, 0) + 1
+        most_common_complexity = max(complexity_counts, key=complexity_counts.get) if complexity_counts else "—"
+
+        st.markdown(f"""
+        <div style="display:flex; gap:14px; margin-bottom:22px; flex-wrap:wrap;">
+          <div class="metric-card" style="flex:1; min-width:120px;">
+            <h4>Total Records</h4>
+            <div class="value">{total_entries}</div>
+          </div>
+          <div class="metric-card" style="flex:1; min-width:120px;">
+            <h4>Avg Top Score</h4>
+            <div class="value" style="color:{get_score_color(avg_score)};">{avg_score:.1f}<span style="font-size:14px;">/100</span></div>
+          </div>
+          <div class="metric-card" style="flex:1; min-width:120px;">
+            <h4>No Match Found</h4>
+            <div class="value" style="color:{'#f85149' if no_match_count else '#3fb950'};">{no_match_count}</div>
+          </div>
+          <div class="metric-card" style="flex:1; min-width:120px;">
+            <h4>Most Common Complexity</h4>
+            <div class="value" style="font-size:18px;">{most_common_complexity}</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <div class="section-header">
+          <h2>Log Entries — Most Recent First</h2>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # ── Entry rows ───────────────────────────────────────────────────────
+        for e in entries:
+            score = e.get("top_match_score")
+            score_color = get_score_color(score) if score is not None else "#8b949e"
+            score_display = f"{score:.0f}/100" if score is not None else "No match"
+
+            complexity = e.get("clinical_complexity", "")
+            complexity_color = (
+                "#f85149" if complexity == "High"
+                else "#d29922" if complexity == "Medium"
+                else "#3fb950"
+            )
+
+            ts_raw = e.get("timestamp", "")
+            # Trim to readable format: 2026-04-06T07:24:18 → 2026-04-06 07:24
+            ts_display = ts_raw[:16].replace("T", " ") if ts_raw else "—"
+
+            provider_name = e.get("top_match_provider_name") or "—"
+            provider_id = e.get("top_match_provider_id") or ""
+            reasoning = e.get("top_match_reasoning") or "No match found."
+            n_matches = e.get("total_matches_returned", 0)
+
+            st.markdown(f"""
+            <div class="provider-card" style="--accent:{score_color};">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+                <div>
+                  <div style="font-size:10px; color:#8b949e; letter-spacing:0.06em; margin-bottom:2px;">
+                    🕐 {ts_display} &nbsp;·&nbsp; ID #{e.get('id','?')}
+                  </div>
+                  <div style="font-size:14px; font-weight:600; color:#e6edf3;">
+                    {e.get('patient_id','—')}
+                  </div>
+                  <div style="margin-top:4px; display:flex; gap:6px; flex-wrap:wrap;">
+                    <span class="tag blue">{e.get('care_type_required','—')}</span>
+                    <span class="tag" style="color:{complexity_color}; border-color:{complexity_color}44; background:{complexity_color}15;">
+                      {complexity}
+                    </span>
+                    <span class="tag">📍 {e.get('location_preference','—')}</span>
+                    <span class="tag">£{e.get('max_weekly_budget',0):,.0f}/wk budget</span>
+                    <span class="tag">{e.get('urgency','—')}</span>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <span class="score-badge" style="background:{score_color};">{score_display}</span>
+                  <div style="font-size:11px; color:#8b949e; margin-top:6px;">
+                    🏆 {provider_name}
+                    {'<span class="provider-id" style="margin-left:6px;">' + provider_id + '</span>' if provider_id else ''}
+                  </div>
+                  <div style="font-size:11px; color:#8b949e; margin-top:2px;">
+                    {n_matches} provider{'s' if n_matches != 1 else ''} matched
+                  </div>
+                </div>
+              </div>
+              <div class="reasoning-box">
+                <strong>🔍 NHS Audit Trace</strong>
+                {reasoning}
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # ── Raw JSON expander ────────────────────────────────────────────────
+        with st.expander("📄 Raw JSON — all entries"):
+            st.json(entries)
 
 
 # ─────────────────────────────────────────────
