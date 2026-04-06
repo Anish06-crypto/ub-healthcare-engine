@@ -20,14 +20,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.11
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: "3.11"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install flake8
+        # Dashboard deps (Streamlit Cloud reads this)
+        pip install -r requirements.txt
+        # Backend deps (needed by app/ and tests/)
+        pip install -r requirements_backend.txt
     - name: Lint with flake8
       run: |
         # specifically target only your code folders:
