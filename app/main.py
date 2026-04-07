@@ -5,10 +5,13 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import List
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from app.models import PatientReferral, MatchResult
 from app.services.extractor import extract_referral_data
@@ -49,6 +52,10 @@ app = FastAPI(
         "url": "https://github.com/Anish06-crypto/ub-healthcare-engine",
     },
 )
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # ─────────────────────────────────────────────
@@ -127,7 +134,8 @@ class RawReferralRequest(BaseModel):
 # ─────────────────────────────────────────────
 
 @app.get("/health", tags=["System"])
-async def health_check():
+@limiter.limit("20/minute")
+async def health_check(request: Request):
     """Confirms the API is running."""
     return {"status": "healthy", "service": "UB Healthcare Placement Engine"}
 
@@ -143,9 +151,10 @@ async def health_check():
         "Primary method uses tool calling; falls back to JSON-mode prompt if needed."
     ),
 )
-async def extract_referral(request: RawReferralRequest):
+@limiter.limit("10/minute")
+async def extract_referral(request: Request, payload: RawReferralRequest):
     try:
-        return extract_referral_data(request.text)
+        return extract_referral_data(payload.text)
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -165,7 +174,9 @@ async def extract_referral(request: RawReferralRequest):
         "reasoning_trace for NHS clinical governance audit requirements."
     ),
 )
+@limiter.limit("10/minute")
 async def match_providers(
+    request: Request,
     referral: PatientReferral,
     db: Session = Depends(get_db),
 ):
@@ -199,12 +210,14 @@ async def match_providers(
         "Accepts raw referral text and returns ranked provider matches in a single request."
     ),
 )
+@limiter.limit("10/minute")
 async def full_pipeline(
-    request: RawReferralRequest,
+    request: Request,
+    payload: RawReferralRequest,
     db: Session = Depends(get_db),
 ):
     try:
-        referral = extract_referral_data(request.text)
+        referral = extract_referral_data(payload.text)
         providers = load_providers()
         results = score_providers(referral, providers)
         if not results:
@@ -233,7 +246,8 @@ async def full_pipeline(
         "Provides a queryable audit trail for NHS clinical governance purposes."
     ),
 )
-async def get_audit_log(db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+async def get_audit_log(request: Request, db: Session = Depends(get_db)):
     try:
         entries = (
             db.query(PlacementLog)

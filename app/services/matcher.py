@@ -1,14 +1,11 @@
 import os
 import json
 from typing import List
-from groq import Groq
 from dotenv import load_dotenv
-from app.models import PatientReferral, CareProvider, MatchResult
 
 load_dotenv()
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-
+from app.models import PatientReferral, CareProvider, MatchResult
 
 # ─────────────────────────────────────────────
 # SCORING WEIGHTS
@@ -29,30 +26,10 @@ def _generate_reasoning_trace(
     score: float
 ) -> str:
     """
-    Uses the LLM to convert a list of raw matching reasons into a single
-    professional sentence suitable for an NHS clinical governance audit trail.
-    Falls back to a plain concatenation if the LLM call fails.
+    Deterministically converts a list of raw matching reasons into a single
+    clinical governance audit trail string. (LLM call removed to save API usage).
     """
-    try:
-        prompt = (
-            f"You are writing a clinical governance audit note for an NHS care placement system.\n"
-            f"Provider: {provider_name}\n"
-            f"Match score: {score}/100\n"
-            f"Matching reasons: {reasons}\n\n"
-            f"Write a single, professional sentence (max 40 words) summarising why this provider "
-            f"was recommended. Use formal clinical language. Do not use bullet points."
-        )
-
-        response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=80
-        )
-        return response.choices[0].message.content.strip()
-
-    except Exception:
-        # Fallback: plain concatenation — always works, never fails
-        return f"{provider_name} matched with score {score}/100. Reasons: {'; '.join(reasons)}."
+    return f"{provider_name} matched with score {score}/100. Reasons: {'; '.join(reasons)}."
 
 
 def score_providers(
